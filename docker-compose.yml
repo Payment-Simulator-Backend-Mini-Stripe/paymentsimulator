@@ -10,9 +10,9 @@ services:
 
   app:
     build: .
-    working_dir: /backend
+    working_dir: /app
     volumes:
-      - .:/backend
+      - .:/app
     ports:
       - 8000:8000
     depends_on:
