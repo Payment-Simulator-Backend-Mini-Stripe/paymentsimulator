@@ -6,6 +6,6 @@ class Payment(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Float)
     status = Column(String)
-    created_on= Column(DateTime)
+    created_at= Column(DateTime)
     merchant_id = Column(Integer, ForeignKey("merchants.id"))
     
