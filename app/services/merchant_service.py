@@ -21,15 +21,19 @@ class MerchantService:
         return await self.merchant_repo.delete_merchant(merchant_id)
     
     async def update_merchant(self, merchant_id: int, merchant_data: MerchantUpdate):
-         merchant = await self.get_merchant_by_id(merchant_id)
-         if merchant is None:
-             return None
-            merchant.name = merchant_data.name
-            merchant.address = merchant_data.address
-            merchant.phone = merchant_data.phone
-            merchant.registered_at = merchant_data.registered_at
-            merchant.status = merchant_data.status
-            return await self.merchant_repo.update_merchant(merchant_id, merchant)
+        merchant = await self.get_merchant_by_id(merchant_id)
+
+        if merchant is None:
+            return None
+
+        merchant.name_store = merchant_data.name_store
+        merchant.address = merchant_data.address
+        merchant.phone = merchant_data.phone
+        merchant.registered_at = merchant_data.registered_at
+        merchant.status = merchant_data.status
+
+
+        return await self.merchant_repo.update_merchant(merchant_id,merchant )
         
     
         
