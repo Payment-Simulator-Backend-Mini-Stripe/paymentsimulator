@@ -5,3 +5,7 @@ from app.core.config import settings
 engine = create_async_engine(settings.DATABASE_URL)
 Base = declarative_base()
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession)
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
