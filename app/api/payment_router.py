@@ -23,4 +23,4 @@ async def create_payment(payment_data: PaymentCreate, service=Depends(get_paymen
 
 @router.put("/{payment_id}")
 async def update_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
-    return await service.update_payment(payment_id, payment_data)
+    return await service.update_payment(payment_id, payment_data.status)
