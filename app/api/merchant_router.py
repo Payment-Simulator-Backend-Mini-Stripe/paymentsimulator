@@ -21,6 +21,6 @@ async def get_merchant(merchant_id: int, service=Depends(get_merchant_service)):
 async def create_merchant(merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
     return await service.create_merchant(merchant_data)
 
-@router.put("/")
-async def update_merchant(merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
-    return await service.update_merchant(merchant_data)    
+@router.put("/{merchant_id}")
+async def update_merchant(merchant_id: int, merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
+    return await service.update_merchant(merchant_id, merchant_data)    
