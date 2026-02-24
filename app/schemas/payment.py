@@ -8,6 +8,9 @@ class PaymentStatus(str, enum.Enum):
     FAILED = "failed"
     REFUNDED = "refunded"
     
+class PaymentStatusUpdate(BaseModel):
+    status: PaymentStatus
+    
 class PaymentCreate(BaseModel):
     amount: int
 
