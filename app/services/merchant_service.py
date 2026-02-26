@@ -1,5 +1,6 @@
 from app.repositories.merchant_repo import MerchantRepository
 from app.schemas.merchant import MerchantCreate, MerchantUpdate
+from app.models.merchant import Merchant
 import secrets
 
 
@@ -8,8 +9,14 @@ class MerchantService:
         self.merchant_repo = merchant_repo
 
     async def create_merchant(self, merchant_data: MerchantCreate):
-            merchant_data.secret_key = secrets.token_hex(32)
-            return await self.merchant_repo.create_merchant(merchant_data)
+        new_merchant = Merchant(
+            name_store=merchant_data.name_store,
+            address=merchant_data.address,
+            email=merchant_data.email,
+            status=merchant_data.status,
+            secret_key=secrets.token_hex(32)
+        )
+        return await self.merchant_repo.create_merchant(new_merchant)
 
     async def get_merchant_by_id(self, merchant_id):
          return await self.merchant_repo.get_merchant_by_id(merchant_id)
@@ -28,12 +35,13 @@ class MerchantService:
 
         merchant.name_store = merchant_data.name_store
         merchant.address = merchant_data.address
-        merchant.phone = merchant_data.phone
-        merchant.registered_at = merchant_data.registered_at
+        merchant.email = merchant_data.email
         merchant.status = merchant_data.status
 
 
-        return await self.merchant_repo.update_merchant(merchant_id,merchant )
+        await self.merchant_repo.session.commit()
+        await self.merchant_repo.session.refresh(merchant)
+        return merchant
         
     
         
