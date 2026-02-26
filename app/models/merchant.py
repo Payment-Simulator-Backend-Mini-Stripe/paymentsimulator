@@ -1,4 +1,4 @@
-from app.db.database import Base
+from app.db.session import Base
 from sqlalchemy import Column, Integer, String, DateTime
 
 class Merchant(Base):
