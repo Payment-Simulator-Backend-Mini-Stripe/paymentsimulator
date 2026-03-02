@@ -48,3 +48,14 @@ class MerchantRepository:
         await self.session.delete(existing_merchant)
         await self.session.commit()
         return existing_merchant
+
+    async def get_merchant_by_secret_key(self, secret_key: str):
+        result = await self.session.execute(select(Merchant).where(Merchant.secret_key== secret_key))
+        return result.scalars().first()
+    
+    async def get_merchant_by_email(self, email: str):
+        result = await self.session.execute(select(Merchant).where(Merchant.email == email))
+        return result.scalars().first()
+
+
+        

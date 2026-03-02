@@ -1,3 +1,4 @@
+from app.models.payment import Payment
 from app.repositories.payment_repo import PaymentRepository
 from app.schemas.payment import PaymentStatus
 
@@ -6,10 +7,14 @@ class PaymentService:
     def __init__(self, payment_repo: PaymentRepository):
         self.payment_repo = payment_repo
 
-    async def create_payment(self, payment_data):
-        payment_data.status = PaymentStatus.PENDING
-        return await self.payment_repo.create_payment(payment_data)
-    
+
+    async def create_payment(self, payment_data, merchant_id: int):
+        new_payment = Payment(
+            amount=payment_data.amount,
+            status=PaymentStatus.PENDING,
+            merchant_id=merchant_id
+        )
+        return await self.payment_repo.create_payment(new_payment)
 
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
