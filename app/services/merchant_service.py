@@ -43,7 +43,8 @@ class MerchantService:
         await self.merchant_repo.session.refresh(merchant)
         return merchant
         
-    
+    async def get_merchant_by_email(self, email: str):
+        return await self.merchant_repo.get_merchant_by_email(email)
         
 
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Body, Depends, HTTPException
 from app.repositories.merchant_repo import MerchantRepository
 from app.schemas.merchant import MerchantCreate
 from app.services.merchant_service import MerchantService
@@ -24,3 +24,10 @@ async def create_merchant(merchant_data: MerchantCreate, service=Depends(get_mer
 @router.put("/{merchant_id}")
 async def update_merchant(merchant_id: int, merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
     return await service.update_merchant(merchant_id, merchant_data)    
+
+@router.post("/get_merchant_by_email")
+async def get_merchant_by_email(email: str = Body(...), service=Depends(get_merchant_service)):
+    merchant = await service.get_merchant_by_email(email)
+    if not merchant:
+        raise HTTPException(status_code=401, detail="Invalid Email")
+    return {"secret_key": merchant.secret_key}
