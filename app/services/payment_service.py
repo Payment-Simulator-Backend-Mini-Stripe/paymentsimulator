@@ -1,21 +1,37 @@
+from fastapi import HTTPException
+
 from app.models.payment import Payment
 from app.repositories.payment_repo import PaymentRepository
+from app.repositories.merchant_repo import MerchantRepository
 from app.schemas.payment import PaymentStatus
+from app.core.config import settings
 
 
 class PaymentService:
-    def __init__(self, payment_repo: PaymentRepository):
+    def __init__(self, payment_repo: PaymentRepository, merchant_repo: MerchantRepository):
         self.payment_repo = payment_repo
+        self.merchant_repo = merchant_repo
 
 
     async def create_payment(self, payment_data, merchant_id: int):
+        if not await self.merchant_repo.is_merchant_active(merchant_id):
+            raise HTTPException(status_code=403, detail="Merchant is not active")
+        if payment_data.amount > settings.MAX_PAYMENT_AMOUNT:
+            raise HTTPException(status_code=400, detail=f"Payment amount exceeds the maximum limit of {settings.MAX_PAYMENT_AMOUNT}")
         new_payment = Payment(
             amount=payment_data.amount,
             status=PaymentStatus.PENDING,
             merchant_id=merchant_id
         )
-        return await self.payment_repo.create_payment(new_payment)
-
+        try:
+            created_payment = await self.payment_repo.create_payment(new_payment)
+            return created_payment
+        except Exception as e:
+            if new_payment.id:
+                await self.payment_repo.update_payment_status(new_payment.id, PaymentStatus.FAILED)
+            raise HTTPException(status_code=500, detail="Failed to create payment")
+        
+        
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
 
