@@ -1,6 +1,7 @@
 from app.models.merchant import Merchant
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.schemas.merchant import MerchantStatus
 
 class MerchantRepository:
     def __init__ (self, session: AsyncSession):
@@ -57,5 +58,9 @@ class MerchantRepository:
         result = await self.session.execute(select(Merchant).where(Merchant.email == email))
         return result.scalars().first()
 
+    async def is_merchant_active(self, merchant_id: int):
+        result = await self.session.execute(select(Merchant).where(Merchant.id == merchant_id))
+        merchant = result.scalars().first()
+        return merchant is not None and merchant.status == MerchantStatus.ACTIVE
 
         

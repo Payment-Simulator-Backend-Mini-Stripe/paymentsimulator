@@ -1,3 +1,5 @@
+import enum
+
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
@@ -8,21 +10,27 @@ class MerchantCreate(BaseModel):
     email: EmailStr
     status: str
         
+class MerchantStatus(str, enum.Enum):
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
 
     
 class MerchantResponse(BaseModel):
     id: int
-    name: str
+    name_store : str
     email: EmailStr
-    created_at: datetime
+    registered_at: datetime
+    model_config = {"from_attributes": True}
 
 
 class MerchantCreatedResponse(BaseModel):
     id: int
-    name: str
+    name_store : str
     email: EmailStr
-    created_at: datetime
+    registered_at: datetime
     api_key: str
+    model_config = {"from_attributes": True}
 
 class MerchantUpdate(BaseModel):
     name_store: Optional[str] = None

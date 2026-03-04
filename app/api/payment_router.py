@@ -4,12 +4,14 @@ from app.schemas.payment import PaymentCreate, PaymentStatusUpdate
 from app.services.payment_service import PaymentService
 from app.db.session import get_db
 from app.core.authentication import get_current_merchant
+from app.repositories.merchant_repo import MerchantRepository
 
 
 router = APIRouter(prefix="/payments", dependencies=[Depends(get_current_merchant)])
 
 async def get_payment_service(db=Depends(get_db)):
-    return PaymentService(PaymentRepository(db))
+    return PaymentService(PaymentRepository(db), MerchantRepository(db))
+
 
 @router.get("/")
 async def get_all_payments(merchant_id: int, service=Depends(get_payment_service)):
