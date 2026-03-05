@@ -52,5 +52,7 @@ class PaymentService:
 
 
 
-            
+    async def expire_pending_payments(self):
+            for payment in await self.payment_repo.get_pending_payments():
+                 await self.payment_repo.update_payment_status(payment.id, PaymentStatus.FAILED)
             

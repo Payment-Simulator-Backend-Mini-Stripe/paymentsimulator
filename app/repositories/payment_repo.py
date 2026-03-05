@@ -2,6 +2,7 @@ from app.models.payment import Payment
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.schemas.payment import PaymentStatus
+from datetime import datetime, timedelta
 
 
 class PaymentRepository:
@@ -38,3 +39,9 @@ class PaymentRepository:
                    [PaymentStatus.PENDING, PaymentStatus.APPROVED]))    
         )
         return result.scalar()
+
+
+
+    async def get_pending_payments(self):
+        result = await self.session.execute(select(Payment).where(Payment.created_at <= datetime.utcnow() - timedelta(hours=24), Payment.status == PaymentStatus.PENDING))
+        return result.scalars().all()

@@ -1,3 +1,4 @@
+from datetime import datetime
 from app.db.session import Base
 from sqlalchemy import Column, Integer, String, DateTime, Float, ForeignKey
 
@@ -6,6 +7,6 @@ class Payment(Base):
     id = Column(Integer, primary_key=True)
     amount = Column(Float)
     status = Column(String)
-    created_at= Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow)
     merchant_id = Column(Integer, ForeignKey("merchants.id"))
     
