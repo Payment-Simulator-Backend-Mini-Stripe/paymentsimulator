@@ -16,6 +16,11 @@ class PaymentService:
     async def create_payment(self, payment_data, merchant_id: int):
         if not await self.merchant_repo.is_merchant_active(merchant_id):
             raise HTTPException(status_code=403, detail="Merchant is not active")
+        
+        active_payments = await self.payment_repo.count_active_payments(merchant_id)
+        if active_payments >= settings.MAX_ACTIVE_PAYMENTS_PER_MERCHANT:
+            raise HTTPException(status_code=429, detail="Merchant has reached the maximum number of active payments")
+
         if payment_data.amount > settings.MAX_PAYMENT_AMOUNT:
             raise HTTPException(status_code=400, detail=f"Payment amount exceeds the maximum limit of {settings.MAX_PAYMENT_AMOUNT}")
         new_payment = Payment(
@@ -44,4 +49,8 @@ class PaymentService:
                 return None
             payment.status = new_status
             return await self.payment_repo.update_payment_status(payment_id, new_status)
+
+
+
+            
             

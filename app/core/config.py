@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: str
     MAX_PAYMENT_AMOUNT: int = 10000
+    MAX_ACTIVE_PAYMENTS_PER_MERCHANT: int = 5
 
     @property
     def DATABASE_URL(self) -> str:

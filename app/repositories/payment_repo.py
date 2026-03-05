@@ -1,6 +1,6 @@
 from app.models.payment import Payment
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from app.schemas.payment import PaymentStatus
 
 
@@ -30,3 +30,11 @@ class PaymentRepository:
         await self.session.commit()
         await self.session.refresh(payment)
         return payment
+    
+    async def count_active_payments(self, merchant_id: int):
+        result = await self.session.execute(
+           select(func.count()).select_from(Payment).where(
+               Payment.merchant_id == merchant_id, Payment.status.in_(
+                   [PaymentStatus.PENDING, PaymentStatus.APPROVED]))    
+        )
+        return result.scalar()
