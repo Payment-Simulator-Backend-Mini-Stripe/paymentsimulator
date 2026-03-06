@@ -36,6 +36,16 @@ class PaymentService:
                 await self.payment_repo.update_payment_status(new_payment.id, PaymentStatus.FAILED)
             raise HTTPException(status_code=500, detail="Failed to create payment")
         
+    async def refund_payment(self, payment_id: int):
+        payment = await self.get_payment_by_id(payment_id)
+        if payment is None:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        if payment.status != PaymentStatus.APPROVED:
+            raise HTTPException(status_code=400, detail="Only approved payments can be refunded")
+        try:
+            return await self.payment_repo.update_payment_status(payment_id, PaymentStatus.REFUNDED)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Failed to refund payment")
         
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
