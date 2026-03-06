@@ -28,3 +28,11 @@ async def create_payment(payment_data: PaymentCreate, merchant=Depends(get_curre
 @router.put("/{payment_id}")
 async def update_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
     return await service.update_payment(payment_id, payment_data.status)
+
+@router.post("/{payment_id}/refund", status_code=200)
+async def refund_payment(
+    payment_id: int,
+    service=Depends(get_payment_service),
+    merchant=Depends(get_current_merchant)
+):
+    return await service.refund_payment(payment_id)
