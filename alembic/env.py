@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 import asyncio
 from app.models.merchant import Merchant
 from app.models.payment import Payment
-
+from app.models.webhook import WebhookConfig, WebhookLog
 
 load_dotenv()
 
