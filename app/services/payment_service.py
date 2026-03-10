@@ -92,3 +92,20 @@ class PaymentService:
             except Exception as e:
                 logger.error(f"Failed to expire payment {payment.id}: {e}")
             
+
+    async def process_payment(self, payment_id: int, new_status: PaymentStatus):
+        payment = await self.get_payment_by_id(payment_id)
+        if payment is None:
+            raise HTTPException(status_code=404, detail="Payment not found")
+        if payment.status != PaymentStatus.PENDING:
+            raise HTTPException(status_code=400, detail="Only pending payments can be processed")
+        if new_status == PaymentStatus.REFUNDED:
+                raise HTTPException(status_code=400, detail="Status cannot be updated to refunded")
+        if new_status == PaymentStatus.PENDING:
+                raise HTTPException(status_code=400, detail="Status cannot be updated to failed")
+        try:
+            updated_payment = await self.payment_repo.update_payment_status(payment_id, new_status)
+            await self.webhook_service.send_webhook(updated_payment)
+            return updated_payment
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))        
