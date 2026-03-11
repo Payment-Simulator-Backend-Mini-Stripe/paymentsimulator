@@ -38,3 +38,8 @@ async def refund_payment(
     merchant=Depends(get_current_merchant)
 ):
     return await service.refund_payment(payment_id)
+
+
+@router.post("/{payment_id}/process")
+async def process_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
+    return await service.process_payment(payment_id, payment_data.status)
