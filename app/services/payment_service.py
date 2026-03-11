@@ -3,14 +3,21 @@ from fastapi import HTTPException
 from app.models.payment import Payment
 from app.repositories.payment_repo import PaymentRepository
 from app.repositories.merchant_repo import MerchantRepository
+from app.schemas import payment
 from app.schemas.payment import PaymentStatus
 from app.core.config import settings
+from app.services.webhook_service import WebhookService
+import logging
 
+
+logger = logging.getLogger(__name__)
 
 class PaymentService:
-    def __init__(self, payment_repo: PaymentRepository, merchant_repo: MerchantRepository):
+    def __init__(self, payment_repo: PaymentRepository, merchant_repo: MerchantRepository, webhook_service: WebhookService):
         self.payment_repo = payment_repo
         self.merchant_repo = merchant_repo
+        self.webhook_service = webhook_service
+
 
 
     async def create_payment(self, payment_data, merchant_id: int):
@@ -43,9 +50,13 @@ class PaymentService:
         if payment.status != PaymentStatus.APPROVED:
             raise HTTPException(status_code=400, detail="Only approved payments can be refunded")
         try:
-            return await self.payment_repo.update_payment_status(payment_id, PaymentStatus.REFUNDED)
+            updated_payment = await self.payment_repo.update_payment_status(payment_id, PaymentStatus.REFUNDED)
+            await self.webhook_service.send_webhook(updated_payment)
+            return updated_payment
         except Exception as e:
             raise HTTPException(status_code=500, detail="Failed to refund payment")
+        
+
         
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
@@ -54,15 +65,30 @@ class PaymentService:
         return await self.payment_repo.get_all_payments(merchant_id)
     
     async def update_payment(self, payment_id: int, new_status: PaymentStatus):
-            payment = await self.get_payment_by_id(payment_id)
-            if payment is None:
-                return None
-            payment.status = new_status
-            return await self.payment_repo.update_payment_status(payment_id, new_status)
-
-
+        payment = await self.get_payment_by_id(payment_id)
+        if payment is None:
+            return None
+        payment.status = new_status
+        try:
+            updated_payment = await self.payment_repo.update_payment_status(payment_id, new_status)
+            await self.webhook_service.send_webhook(updated_payment)
+            return updated_payment
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+                
 
     async def expire_pending_payments(self):
-            for payment in await self.payment_repo.get_pending_payments():
-                 await self.payment_repo.update_payment_status(payment.id, PaymentStatus.FAILED)
+        pending_payments = await self.payment_repo.get_pending_payments()
+
+        for payment in pending_payments:
+            try:
+                updated_payment = await self.payment_repo.update_payment_status(
+                    payment.id,
+                    PaymentStatus.FAILED
+                )
+
+                await self.webhook_service.send_webhook(updated_payment)    
+
+            except Exception as e:
+                logger.error(f"Failed to expire payment {payment.id}: {e}")
             
