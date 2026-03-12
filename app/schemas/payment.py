@@ -13,13 +13,14 @@ class PaymentStatusUpdate(BaseModel):
     
 class PaymentCreate(BaseModel):
     amount: int
-
-
+    payer_id: int
+    receiver_id: int
+    
 class PaymentResponse(BaseModel):
-    merchant_id: int
     id: int
     amount: int
     created_at: datetime
     status: PaymentStatus
-
-
+    payer_id: int
+    receiver_id: int
+    model_config: dict = {"from_attributes": True}

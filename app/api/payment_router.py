@@ -16,20 +16,20 @@ async def get_payment_service(db=Depends(get_db)):
 
 
 @router.get("/")
-async def get_all_payments(merchant_id: int, service=Depends(get_payment_service)):
-    return await service.get_all_payments(merchant_id) 
+async def get_all_payments(payer_id: int, receiver_id: int, service=Depends(get_payment_service)):
+    return await service.get_all_payments(payer_id, receiver_id) 
 
 @router.get("/{payment_id}")
 async def get_payment(payment_id: int, service=Depends(get_payment_service)):
     return await service.get_payment_by_id(payment_id)
 
 @router.post("/")
-async def create_payment(payment_data: PaymentCreate, merchant=Depends(get_current_merchant), service=Depends(get_payment_service)):    
-    return await service.create_payment(payment_data, merchant.id)
+async def create_payment(payment_data: PaymentCreate, service=Depends(get_payment_service)):    
+    return await service.create_payment(payment_data, payment_data.payer_id, payment_data.receiver_id)
 
 @router.put("/{payment_id}")
 async def update_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
-    return await service.update_payment(payment_id, payment_data.status)
+    return await service.process_payment(payment_id, payment_data.status)
 
 @router.post("/{payment_id}/refund", status_code=200)
 async def refund_payment(

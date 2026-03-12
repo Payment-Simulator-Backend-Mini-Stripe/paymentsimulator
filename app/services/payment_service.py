@@ -18,13 +18,13 @@ class PaymentService:
         self.merchant_repo = merchant_repo
         self.webhook_service = webhook_service
 
+    
 
-
-    async def create_payment(self, payment_data, merchant_id: int):
-        if not await self.merchant_repo.is_merchant_active(merchant_id):
+    async def create_payment(self, payment_data, payer_id: int, receiver_id: int):
+        if not await self.merchant_repo.is_merchant_active(payer_id):
             raise HTTPException(status_code=403, detail="Merchant is not active")
         
-        active_payments = await self.payment_repo.count_active_payments(merchant_id)
+        active_payments = await self.payment_repo.count_active_payments(payer_id)
         if active_payments >= settings.MAX_ACTIVE_PAYMENTS_PER_MERCHANT:
             raise HTTPException(status_code=429, detail="Merchant has reached the maximum number of active payments")
 
@@ -33,7 +33,8 @@ class PaymentService:
         new_payment = Payment(
             amount=payment_data.amount,
             status=PaymentStatus.PENDING,
-            merchant_id=merchant_id
+            payer_id=payer_id,
+            receiver_id=receiver_id
         )
         try:
             created_payment = await self.payment_repo.create_payment(new_payment)
@@ -61,8 +62,8 @@ class PaymentService:
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
 
-    async def get_all_payments(self, merchant_id):
-        return await self.payment_repo.get_all_payments(merchant_id)
+    async def get_all_payments(self, payer_id: int, receiver_id: int):
+        return await self.payment_repo.get_all_payments(payer_id, receiver_id)
     
     async def update_payment(self, payment_id: int, new_status: PaymentStatus):
         payment = await self.get_payment_by_id(payment_id)
@@ -95,6 +96,7 @@ class PaymentService:
 
     async def process_payment(self, payment_id: int, new_status: PaymentStatus):
         payment = await self.get_payment_by_id(payment_id)
+
         if payment is None:
             raise HTTPException(status_code=404, detail="Payment not found")
         if payment.status != PaymentStatus.PENDING:
@@ -103,9 +105,20 @@ class PaymentService:
                 raise HTTPException(status_code=400, detail="Status cannot be updated to refunded")
         if new_status == PaymentStatus.PENDING:
                 raise HTTPException(status_code=400, detail="Status cannot be updated to failed")
+        if new_status == PaymentStatus.APPROVED:
+            payer = await self.merchant_repo.get_merchant_by_id(payment.payer_id)
+            receiver = await self.merchant_repo.get_merchant_by_id(payment.receiver_id)
+            if payer.wallet < payment.amount:
+                raise HTTPException(status_code=400, detail="Insufficient funds")
+            print(f"Payer wallet: {payer.wallet}, Amount: {payment.amount}")
+            print(f"New payer wallet: {payer.wallet - payment.amount}")
+            await self.merchant_repo.update_wallet(payment.payer_id, payer.wallet - payment.amount)
+            await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet + payment.amount)
         try:
             updated_payment = await self.payment_repo.update_payment_status(payment_id, new_status)
             await self.webhook_service.send_webhook(updated_payment)
             return updated_payment
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))        
+        
+    

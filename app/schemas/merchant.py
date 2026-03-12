@@ -9,6 +9,7 @@ class MerchantCreate(BaseModel):
     address: str
     email: EmailStr
     status: str
+    wallet: float
         
 class MerchantStatus(str, enum.Enum):
     ACTIVE = "active"
@@ -22,6 +23,7 @@ class MerchantResponse(BaseModel):
     email: EmailStr
     registered_at: datetime
     model_config = {"from_attributes": True}
+    wallet: float
 
 
 class MerchantCreatedResponse(BaseModel):
@@ -29,6 +31,7 @@ class MerchantCreatedResponse(BaseModel):
     name_store : str
     email: EmailStr
     registered_at: datetime
+    wallet: float
     api_key: str
     model_config = {"from_attributes": True}
 
@@ -37,6 +40,6 @@ class MerchantUpdate(BaseModel):
     address: Optional[str] = None
     email: Optional[EmailStr] = None
     status: Optional[str] = None
-    
-    
+    wallet: Optional[float] = None
+
             
