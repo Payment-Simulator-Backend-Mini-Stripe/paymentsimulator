@@ -1,6 +1,6 @@
 from app.models.payment import Payment
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from app.schemas.payment import PaymentStatus
 from datetime import datetime, timedelta
 
@@ -19,8 +19,8 @@ class PaymentRepository:
         result = await self.session.execute(select(Payment).where(Payment.id == payment_id))
         return result.scalars().first()
     
-    async def get_all_payments(self, merchant_id: int):
-        result = await self.session.execute(select(Payment).where(Payment.merchant_id == merchant_id))
+    async def get_all_payments(self, payer_id: int, receiver_id: int):
+        result = await self.session.execute(select(Payment).where(or_(Payment.payer_id == payer_id, Payment.receiver_id == receiver_id)))
         return result.scalars().all()
     
     async def update_payment_status(self, payment_id: int, new_status: PaymentStatus):
@@ -32,16 +32,15 @@ class PaymentRepository:
         await self.session.refresh(payment)
         return payment
     
-    async def count_active_payments(self, merchant_id: int):
+    async def count_active_payments(self, payer_id: int):
         result = await self.session.execute(
            select(func.count()).select_from(Payment).where(
-               Payment.merchant_id == merchant_id, Payment.status.in_(
+               Payment.payer_id == payer_id , Payment.status.in_(
                    [PaymentStatus.PENDING, PaymentStatus.APPROVED]))    
         )
         return result.scalar()
-
-
-
+    
     async def get_pending_payments(self):
         result = await self.session.execute(select(Payment).where(Payment.created_at <= datetime.utcnow() - timedelta(hours=24), Payment.status == PaymentStatus.PENDING))
         return result.scalars().all()
+    

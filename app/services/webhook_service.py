@@ -18,7 +18,7 @@ class WebhookService:
         return hmac.compare_digest(expected_signature, signature)
 
     async def send_webhook(self, payment):
-        webhook_config = await self.webhook_repo.get_webhook_config_by_merchant_id(payment.merchant_id)
+        webhook_config = await self.webhook_repo.get_webhook_config_by_merchant_id(payment.payer_id)
         if not webhook_config:
             return
 

@@ -62,5 +62,14 @@ class MerchantRepository:
         result = await self.session.execute(select(Merchant).where(Merchant.id == merchant_id))
         merchant = result.scalars().first()
         return merchant is not None and merchant.status == MerchantStatus.ACTIVE
-
+    
+    
+    async def update_wallet(self, merchant_id: int, wallet: float):
+        merchant = await self.get_merchant_by_id(merchant_id)
+        if merchant is None:
+            return None
+        merchant.wallet = wallet
+        await self.session.commit()
+        await self.session.refresh(merchant)
+        return merchant
         

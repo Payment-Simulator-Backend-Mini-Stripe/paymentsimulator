@@ -2,6 +2,7 @@ from app.repositories.merchant_repo import MerchantRepository
 from app.schemas.merchant import MerchantCreate, MerchantUpdate
 from app.models.merchant import Merchant
 import secrets
+from datetime import datetime
 
 
 class MerchantService:
@@ -14,7 +15,9 @@ class MerchantService:
             address=merchant_data.address,
             email=merchant_data.email,
             status=merchant_data.status,
-            secret_key=secrets.token_hex(32)
+            secret_key=secrets.token_hex(32),
+            wallet = merchant_data.wallet,
+            registered_at = datetime.utcnow()
         )
         return await self.merchant_repo.create_merchant(new_merchant)
 

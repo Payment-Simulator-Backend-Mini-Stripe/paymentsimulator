@@ -1,5 +1,5 @@
 from app.db.session import Base
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, Float
 
 class Merchant(Base):
     __tablename__ = "merchants"
@@ -10,3 +10,4 @@ class Merchant(Base):
     registered_at = Column(DateTime)
     secret_key = Column(String)
     status = Column(String)
+    wallet = Column(Float)

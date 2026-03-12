@@ -8,5 +8,6 @@ class Payment(Base):
     amount = Column(Float)
     status = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
-    merchant_id = Column(Integer, ForeignKey("merchants.id"))
+    payer_id = Column(Integer, ForeignKey("merchants.id"))
+    receiver_id = Column(Integer, ForeignKey("merchants.id"))
     
