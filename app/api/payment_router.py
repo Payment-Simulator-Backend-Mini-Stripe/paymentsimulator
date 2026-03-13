@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends
 from app.repositories.payment_repo import PaymentRepository
 from app.repositories.webhook_repo import WebhookRepository
 from app.schemas.payment import PaymentCreate, PaymentStatusUpdate
@@ -24,12 +24,10 @@ async def get_payment(payment_id: int, service=Depends(get_payment_service)):
     return await service.get_payment_by_id(payment_id)
 
 @router.post("/")
-async def create_payment(payment_data: PaymentCreate, service=Depends(get_payment_service)):    
-    return await service.create_payment(payment_data, payment_data.payer_id, payment_data.receiver_id)
-
-@router.put("/{payment_id}")
-async def update_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
-    return await service.process_payment(payment_id, payment_data.status)
+async def create_payment(payment_data: PaymentCreate, backgroundasks: BackgroundTasks, service=Depends(get_payment_service)):
+    process_payment = await service.create_payment(payment_data, payment_data.payer_id, payment_data.receiver_id)
+    backgroundasks.add_task(service.process_payment, process_payment.id)    
+    return process_payment
 
 @router.post("/{payment_id}/refund", status_code=200)
 async def refund_payment(
@@ -39,7 +37,3 @@ async def refund_payment(
 ):
     return await service.refund_payment(payment_id)
 
-
-@router.post("/{payment_id}/process")
-async def process_payment(payment_id: int, payment_data: PaymentStatusUpdate, service=Depends(get_payment_service)):
-    return await service.process_payment(payment_id, payment_data.status)
