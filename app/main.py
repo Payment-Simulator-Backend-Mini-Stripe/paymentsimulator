@@ -7,7 +7,7 @@ from app.services.payment_service import PaymentService
 from app.repositories.payment_repo import PaymentRepository
 from app.db.session import AsyncSessionLocal
 
-
+from fastapi.middleware.cors import CORSMiddleware
 
 async def run_expire_payments():
     async with AsyncSessionLocal() as session:
@@ -33,6 +33,13 @@ app = FastAPI(lifespan=lifespan)
 async def health():
     return {"status": "ok"}
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(payment_router)
 app.include_router(merchant_router)
