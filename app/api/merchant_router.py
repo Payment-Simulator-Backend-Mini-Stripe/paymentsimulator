@@ -6,6 +6,8 @@ from app.schemas.webhook import WebhookConfigCreate
 from app.services.merchant_service import MerchantService
 from app.db.session import get_db
 from app.services.webhook_service import WebhookService
+from app.core.authentication import get_current_merchant
+
 
 router = APIRouter(prefix="/merchants")
 
@@ -17,9 +19,12 @@ async def get_all_merchants(service=Depends(get_merchant_service)):
     return await service.get_all_merchants()
 
 @router.get("/{merchant_id}")
-async def get_merchant(merchant_id: int, service=Depends(get_merchant_service)):
+async def get_merchant(merchant_id: int, service=Depends(get_merchant_service), merchant=Depends(get_current_merchant)):
+    if merchant.id != merchant_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     return await service.get_merchant_by_id(merchant_id)
 
+    
 @router.post("/")
 async def create_merchant(merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
     return await service.create_merchant(merchant_data)
