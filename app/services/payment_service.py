@@ -45,13 +45,18 @@ class PaymentService:
         
     async def refund_payment(self, payment_id: int):
         payment = await self.get_payment_by_id(payment_id)
+        
         if payment is None:
             raise HTTPException(status_code=404, detail="Payment not found")
         if payment.status != PaymentStatus.APPROVED:
             raise HTTPException(status_code=400, detail="Only approved payments can be refunded")
         try:
+            payer = await self.merchant_repo.get_merchant_by_id(payment.payer_id)
+            receiver = await self.merchant_repo.get_merchant_by_id(payment.receiver_id)
             updated_payment = await self.payment_repo.update_payment_status(payment_id, PaymentStatus.REFUNDED)
             await self.webhook_service.send_webhook(updated_payment)
+            await self.merchant_repo.update_wallet(payment.payer_id, payer.wallet + payment.amount)
+            await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet - payment.amount)
             return updated_payment
         except Exception as e:
             raise HTTPException(status_code=500, detail="Failed to refund payment")
