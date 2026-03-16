@@ -573,7 +573,7 @@ async function handleLogin() {
     const res = await fetch(`${API}/merchants/${mid}`, { headers: { 'X-API-Key': key } });
     if (!res.ok) throw new Error();
     const merchant = await res.json();
-    apiKey = key;
+    if (merchant.id !== mid) throw new Error();
     merchantId = mid;
     localStorage.setItem('apiKey', key);
     localStorage.setItem('merchantId', mid);
@@ -633,7 +633,7 @@ async function loadDashboard() {
   } catch { showToast('Error cargando merchants', 'red'); }
 
   try {
-    const res2 = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}`, { headers: getHeaders() });
+    const res2 = await fetch(`${API}/payments/?merchant_id=${merchantId}`, { headers: getHeaders() });
     if (res2.ok) {
       const payments = await res2.json();
       document.getElementById('stat-approved').textContent = payments.filter(p=>p.status==='approved').length;
@@ -644,7 +644,7 @@ async function loadDashboard() {
 
 async function loadPayments() {
   try {
-    const res = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}`, { headers: getHeaders() });
+    const res = await fetch(`${API}/payments/?merchant_id=${merchantId}`, { headers: getHeaders() });
     if (!res.ok) return;
     allPayments = await res.json();
     renderPayments();
