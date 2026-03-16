@@ -1,5 +1,4 @@
 from fastapi import HTTPException
-
 from app.models.payment import Payment
 from app.repositories.payment_repo import PaymentRepository
 from app.repositories.merchant_repo import MerchantRepository
@@ -8,7 +7,7 @@ from app.schemas.payment import PaymentStatus
 from app.core.config import settings
 from app.services.webhook_service import WebhookService
 import logging
-
+from app.schemas.merchant import MerchantStatus
 
 logger = logging.getLogger(__name__)
 
@@ -94,31 +93,25 @@ class PaymentService:
                 logger.error(f"Failed to expire payment {payment.id}: {e}")
             
 
-    async def process_payment(self, payment_id: int, new_status: PaymentStatus):
+    async def process_payment(self, payment_id: int):
         payment = await self.get_payment_by_id(payment_id)
-
         if payment is None:
-            raise HTTPException(status_code=404, detail="Payment not found")
-        if payment.status != PaymentStatus.PENDING:
-            raise HTTPException(status_code=400, detail="Only pending payments can be processed")
-        if new_status == PaymentStatus.REFUNDED:
-                raise HTTPException(status_code=400, detail="Status cannot be updated to refunded")
-        if new_status == PaymentStatus.PENDING:
-                raise HTTPException(status_code=400, detail="Status cannot be updated to failed")
-        if new_status == PaymentStatus.APPROVED:
-            payer = await self.merchant_repo.get_merchant_by_id(payment.payer_id)
-            receiver = await self.merchant_repo.get_merchant_by_id(payment.receiver_id)
-            if payer.wallet < payment.amount:
-                raise HTTPException(status_code=400, detail="Insufficient funds")
-            print(f"Payer wallet: {payer.wallet}, Amount: {payment.amount}")
-            print(f"New payer wallet: {payer.wallet - payment.amount}")
-            await self.merchant_repo.update_wallet(payment.payer_id, payer.wallet - payment.amount)
-            await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet + payment.amount)
-        try:
-            updated_payment = await self.payment_repo.update_payment_status(payment_id, new_status)
-            await self.webhook_service.send_webhook(updated_payment)
-            return updated_payment
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))        
+            return
+        payer = await self.merchant_repo.get_merchant_by_id(payment.payer_id)
+        if payer is None or payer.status != MerchantStatus.ACTIVE:
+            await self.payment_repo.update_payment_status(payment_id, PaymentStatus.FAILED)
+            return
+        if payment.amount > settings.MAX_PAYMENT_AMOUNT:
+            await self.payment_repo.update_payment_status(payment_id, PaymentStatus.FAILED)
+            return
+        if payer.wallet < payment.amount:
+            await self.payment_repo.update_payment_status(payment_id, PaymentStatus.FAILED)
+            return
+        receiver = await self.merchant_repo.get_merchant_by_id(payment.receiver_id)
+        await self.merchant_repo.update_wallet(payment.payer_id, payer.wallet - payment.amount)
+        await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet + payment.amount)
+        await self.payment_repo.update_payment_status(payment_id, PaymentStatus.APPROVED)
+        await self.webhook_service.send_webhook(payment)
         
+
     

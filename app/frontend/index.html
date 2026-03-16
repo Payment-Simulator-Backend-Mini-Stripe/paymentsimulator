@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MercadoJunior — Payment Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --sidebar: #00a650;
+    --sidebar-dark: #007a3c;
+    --sidebar-text: rgba(255,255,255,0.75);
+    --sidebar-active: rgba(255,255,255,0.15);
+    --white: #ffffff;
+    --gray-50: #f8f9fa;
+    --gray-100: #e9ecef;
+    --gray-200: #dee2e6;
+    --gray-400: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-800: #343a40;
+    --blue: #009ee3;
+    --blue-light: #e6f6fd;
+    --green: #00a650;
+    --green-light: #e6f7ee;
+    --red: #f23d4f;
+    --red-light: #fef0f1;
+    --yellow: #f5a623;
+    --yellow-light: #fef9ec;
+    --text: #1a1a2e;
+    --text-muted: #6c757d;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #00a650 0%, #007a3c 50%, #005a2d 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    transition: opacity 0.4s ease;
+  }
+  #login-screen.hidden { opacity: 0; pointer-events: none; }
+
+  .login-card {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 3rem 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 2rem;
+  }
+  .login-logo-icon {
+    width: 44px; height: 44px;
+    background: var(--green);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 20px; font-weight: 600;
+  }
+  .login-logo-text { font-size: 22px; font-weight: 600; color: var(--text); }
+  .login-logo-text span { color: var(--green); }
+  .login-card h2 { font-size: 20px; font-weight: 600; margin-bottom: 0.4rem; }
+  .login-card p { color: var(--text-muted); font-size: 14px; margin-bottom: 2rem; }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-800); margin-bottom: 6px; }
+  .form-group input, .form-group select {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--white);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--green); }
+  .btn-primary {
+    width: 100%; padding: 13px;
+    background: var(--green);
+    color: white;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 15px; font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .btn-primary:hover { background: var(--sidebar-dark); }
+  .btn-primary:active { transform: scale(0.98); }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 0.8rem; display: none; }
+
+  /* ── APP SHELL ── */
+  #app { display: none; width: 100%; }
+  #app.visible { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px; min-height: 100vh;
+    background: var(--sidebar);
+    display: flex; flex-direction: column;
+    padding: 0;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .sidebar-header {
+    padding: 1.5rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo { display: flex; align-items: center; gap: 10px; }
+  .sidebar-logo-icon {
+    width: 36px; height: 36px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: white;
+  }
+  .sidebar-logo-text { font-size: 16px; font-weight: 600; color: white; }
+
+  .sidebar-merchant {
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-merchant-label { font-size: 11px; color: var(--sidebar-text); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .sidebar-merchant-name { font-size: 14px; font-weight: 500; color: white; }
+  .sidebar-merchant-wallet { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 2px; }
+
+  .sidebar-nav { flex: 1; padding: 1rem 0.75rem; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    color: var(--sidebar-text);
+    font-size: 14px; font-weight: 400;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--sidebar-active); color: white; }
+  .nav-item.active { background: rgba(255,255,255,0.2); color: white; font-weight: 500; }
+  .nav-icon { width: 18px; height: 18px; opacity: 0.9; }
+
+  .sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .btn-logout {
+    width: 100%; padding: 10px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: var(--radius-sm);
+    color: white; font-family: 'Sora', sans-serif;
+    font-size: 13px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-logout:hover { background: rgba(255,255,255,0.2); }
+
+  /* ── MAIN CONTENT ── */
+  .main { margin-left: 240px; flex: 1; padding: 2rem; min-height: 100vh; }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header { margin-bottom: 2rem; }
+  .page-header h1 { font-size: 24px; font-weight: 600; color: var(--text); }
+  .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-100);
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-100);
+  }
+  .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── MERCHANT TABLE ── */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    text-align: left; padding: 10px 14px;
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.07em;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-50); }
+  tbody td { padding: 13px 14px; color: var(--text); }
+  .td-mono { font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .badge-active { background: var(--green-light); color: #007a3c; }
+  .badge-active .badge-dot { background: var(--green); }
+  .badge-inactive { background: var(--gray-100); color: var(--gray-600); }
+  .badge-inactive .badge-dot { background: var(--gray-400); }
+  .badge-approved { background: var(--green-light); color: #007a3c; }
+  .badge-approved .badge-dot { background: var(--green); }
+  .badge-pending { background: var(--yellow-light); color: #b07a00; }
+  .badge-pending .badge-dot { background: var(--yellow); animation: pulse 1.5s infinite; }
+  .badge-failed { background: var(--red-light); color: #c0132a; }
+  .badge-failed .badge-dot { background: var(--red); }
+  .badge-refunded { background: var(--blue-light); color: #0073b1; }
+  .badge-refunded .badge-dot { background: var(--blue); }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ── SEND PAYMENT FORM ── */
+  .form-card { max-width: 520px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group-app { margin-bottom: 1.25rem; }
+  .form-group-app label { display: block; font-size: 13px; font-weight: 500; color: var(--gray-800); margin-bottom: 6px; }
+  .form-group-app input, .form-group-app select {
+    width: 100%; padding: 11px 13px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif; font-size: 14px;
+    color: var(--text); background: var(--white);
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-group-app input:focus, .form-group-app select:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,166,80,0.1); }
+  .amount-input-wrap { position: relative; }
+  .amount-prefix {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    font-size: 14px; font-weight: 500; color: var(--text-muted);
+  }
+  .amount-input-wrap input { padding-left: 30px; }
+  .btn-send {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px 24px;
+    background: var(--green); color: white;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 500;
+    cursor: pointer; transition: background 0.2s, transform 0.1s;
+    width: 100%; margin-top: 0.5rem;
+  }
+  .btn-send:hover { background: var(--sidebar-dark); }
+  .btn-send:active { transform: scale(0.98); }
+  .btn-send:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+  /* ── PAYMENT RESULT ── */
+  .payment-result {
+    margin-top: 1.25rem; padding: 1rem 1.25rem;
+    border-radius: var(--radius-sm);
+    display: none;
+    font-size: 14px;
+  }
+  .payment-result.success { background: var(--green-light); border: 1px solid rgba(0,166,80,0.2); color: #007a3c; }
+  .payment-result.error { background: var(--red-light); border: 1px solid rgba(242,61,79,0.2); color: #c0132a; }
+
+  /* ── HISTORY ── */
+  .history-controls {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;
+  }
+  .polling-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--green); font-weight: 500;
+  }
+  .polling-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); animation: pulse 1.5s infinite;
+  }
+  .filter-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--gray-200);
+    background: var(--white); color: var(--text-muted);
+    font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--green); color: var(--green); }
+  .filter-btn.active { background: var(--green); border-color: var(--green); color: white; }
+
+  .btn-refund {
+    padding: 5px 12px; border-radius: 6px;
+    border: 1.5px solid var(--blue);
+    background: var(--blue-light); color: #0073b1;
+    font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .btn-refund:hover { background: var(--blue); color: white; }
+
+  .empty-state {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--text-muted); font-size: 14px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 0.75rem; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--text); color: white;
+    padding: 12px 20px; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    opacity: 0; transform: translateY(12px);
+    transition: all 0.3s; pointer-events: none; z-index: 9999;
+    max-width: 320px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.green { background: var(--green); }
+  .toast.red { background: var(--red); }
+
+  /* ── LOADING ── */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-50) 50%, var(--gray-100) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 4px;
+    height: 14px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="mercadojunior.png" alt="MercadoJunior" style="height: 100px;" /> 
+    </div>
+    <h2>Bienvenido</h2>
+    <p>Ingresá tu API Key para acceder al simulador de pagos</p>
+    <div class="form-group">
+      <label>API Key</label>
+      <input type="password" id="api-key-input" placeholder="sk_live_xxxxxxxxxxxx" autocomplete="off" />
+    </div>
+    <div class="form-group">
+      <label>Merchant ID</label>
+      <input type="number" id="merchant-id-input" placeholder="ID de tu comercio" />
+    </div>
+    <button class="btn-primary" onclick="handleLogin()">Ingresar</button>
+    <div class="login-error" id="login-error">API Key o Merchant ID inválidos. Verificá tus datos.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+    <div class="sidebar-logo">
+  <img src="mercadojunior.png" alt="MercadoJunior" style="height: 90px; width: 90px; border-radius: 50%; object-fit: cover;" />
+</div>
+    </div>
+    <div class="sidebar-merchant">
+      <div class="sidebar-merchant-label">Comercio</div>
+      <div class="sidebar-merchant-name" id="sidebar-name">—</div>
+      <div class="sidebar-merchant-wallet" id="sidebar-wallet">Saldo: $—</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="navigate('send')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Enviar pago
+      </div>
+      <div class="nav-item" onclick="navigate('history')">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Historial
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <button class="btn-logout" onclick="handleLogout()">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Dashboard</h1>
+        <p>Resumen general de tu actividad</p>
+      </div>
+      <div class="stats-grid" id="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Saldo disponible</div>
+          <div class="stat-value" id="stat-wallet">—</div>
+          <div class="stat-sub">En tu billetera</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pagos aprobados</div>
+          <div class="stat-value" id="stat-approved">—</div>
+          <div class="stat-sub">Total histórico</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pagos pendientes</div>
+          <div class="stat-value" id="stat-pending">—</div>
+          <div class="stat-sub">En proceso</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Merchants activos</div>
+          <div class="stat-value" id="stat-merchants">—</div>
+          <div class="stat-sub">En el sistema</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:1.25rem;">Todos los merchants</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Estado</th>
+                <th>Saldo</th>
+                <th>Registrado</th>
+              </tr>
+            </thead>
+            <tbody id="merchants-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text-muted);font-size:14px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEND PAYMENT -->
+    <div class="page" id="page-send">
+      <div class="page-header">
+        <h1>Enviar pago</h1>
+        <p>Transferí fondos entre merchants del sistema</p>
+      </div>
+      <div class="card form-card">
+        <div class="form-row">
+          <div class="form-group-app">
+            <label>Payer ID (origen)</label>
+            <input type="number" id="pay-payer" placeholder="ID del pagador" />
+          </div>
+          <div class="form-group-app">
+            <label>Receiver ID (destino)</label>
+            <input type="number" id="pay-receiver" placeholder="ID del receptor" />
+          </div>
+        </div>
+        <div class="form-group-app">
+          <label>Monto</label>
+          <div class="amount-input-wrap">
+            <span class="amount-prefix">$</span>
+            <input type="number" id="pay-amount" placeholder="0.00" min="1" step="0.01" />
+          </div>
+        </div>
+        <button class="btn-send" id="btn-send-payment" onclick="sendPayment()">
+          Enviar pago
+        </button>
+        <div class="payment-result" id="payment-result"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="page" id="page-history">
+      <div class="page-header">
+        <h1>Historial de pagos</h1>
+        <p>Todos los pagos del sistema</p>
+      </div>
+      <div class="card">
+        <div class="history-controls">
+          <div class="filter-group">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
+            <button class="filter-btn" onclick="setFilter('pending', this)">Pendientes</button>
+            <button class="filter-btn" onclick="setFilter('approved', this)">Aprobados</button>
+            <button class="filter-btn" onclick="setFilter('failed', this)">Fallidos</button>
+            <button class="filter-btn" onclick="setFilter('refunded', this)">Reembolsados</button>
+          </div>
+          <div class="polling-badge">
+            <div class="polling-dot"></div>
+            Actualizando cada 3s
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Payer</th>
+                <th>Receiver</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="payments-tbody">
+              <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted);">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let apiKey = '';
+let merchantId = null;
+let pollingInterval = null;
+let currentFilter = 'all';
+let allPayments = [];
+
+function getHeaders() {
+  return { 'Content-Type': 'application/json', 'X-API-Key': apiKey };
+}
+
+async function handleLogin() {
+  const key = document.getElementById('api-key-input').value.trim();
+  const mid = parseInt(document.getElementById('merchant-id-input').value.trim());
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  if (!key || !mid) { err.style.display = 'block'; err.textContent = 'Completá todos los campos.'; return; }
+  try {
+    const res = await fetch(`${API}/merchants/${mid}`, { headers: { 'X-API-Key': key } });
+    if (!res.ok) throw new Error();
+    const merchant = await res.json();
+    apiKey = key;
+    merchantId = mid;
+    localStorage.setItem('apiKey', key);
+    localStorage.setItem('merchantId', mid);
+    document.getElementById('sidebar-name').textContent = merchant.name_store;
+    document.getElementById('sidebar-wallet').textContent = `Saldo: $${merchant.wallet.toLocaleString('es-AR', {minimumFractionDigits:2})}`;
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    loadDashboard();
+    startPolling();
+  } catch {
+    err.style.display = 'block';
+    err.textContent = 'No se pudo autenticar. Verificá tu API Key y Merchant ID.';
+  }
+}
+
+function handleLogout() {
+  localStorage.removeItem('apiKey');
+  localStorage.removeItem('merchantId');
+  apiKey = ''; merchantId = null;
+  clearInterval(pollingInterval);
+  document.getElementById('login-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('merchant-id-input').value = '';
+}
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`page-${page}`).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (page === 'dashboard') loadDashboard();
+  if (page === 'history') loadPayments();
+}
+
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${API}/merchants/`, { headers: getHeaders() });
+    const merchants = await res.json();
+    const tbody = document.getElementById('merchants-tbody');
+    if (!merchants.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">🏪</div>No hay merchants</div></td></tr>`; return; }
+    tbody.innerHTML = merchants.map(m => `
+      <tr>
+        <td class="td-mono">#${m.id}</td>
+        <td style="font-weight:500">${m.name_store}</td>
+        <td style="color:var(--text-muted)">${m.email}</td>
+        <td><span class="badge badge-${m.status === 'active' ? 'active' : 'inactive'}"><span class="badge-dot"></span>${m.status === 'active' ? 'Activo' : 'Inactivo'}</span></td>
+        <td class="td-mono" style="font-weight:500">$${m.wallet.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+        <td style="color:var(--text-muted);font-size:13px">${new Date(m.registered_at).toLocaleDateString('es-AR')}</td>
+      </tr>`).join('');
+    document.getElementById('stat-merchants').textContent = merchants.length;
+    const myMerchant = merchants.find(m => m.id === merchantId);
+    if (myMerchant) {
+      document.getElementById('stat-wallet').textContent = `$${myMerchant.wallet.toLocaleString('es-AR',{minimumFractionDigits:2})}`;
+      document.getElementById('sidebar-wallet').textContent = `Saldo: $${myMerchant.wallet.toLocaleString('es-AR',{minimumFractionDigits:2})}`;
+    }
+  } catch { showToast('Error cargando merchants', 'red'); }
+
+  try {
+    const res2 = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}`, { headers: getHeaders() });
+    if (res2.ok) {
+      const payments = await res2.json();
+      document.getElementById('stat-approved').textContent = payments.filter(p=>p.status==='approved').length;
+      document.getElementById('stat-pending').textContent = payments.filter(p=>p.status==='pending').length;
+    }
+  } catch {}
+}
+
+async function loadPayments() {
+  try {
+    const res = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}`, { headers: getHeaders() });
+    if (!res.ok) return;
+    allPayments = await res.json();
+    renderPayments();
+  } catch {}
+}
+
+function renderPayments() {
+  const tbody = document.getElementById('payments-tbody');
+  const filtered = currentFilter === 'all' ? allPayments : allPayments.filter(p => p.status === currentFilter);
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📋</div>No hay pagos para mostrar</div></td></tr>`;
+    return;
+  }
+  const statusLabels = { pending:'Pendiente', approved:'Aprobado', failed:'Fallido', refunded:'Reembolsado' };
+  tbody.innerHTML = filtered.map(p => `
+    <tr>
+      <td class="td-mono">#${p.id}</td>
+      <td class="td-mono">#${p.payer_id}</td>
+      <td class="td-mono">#${p.receiver_id}</td>
+      <td class="td-mono" style="font-weight:500">$${p.amount.toLocaleString('es-AR',{minimumFractionDigits:2})}</td>
+      <td><span class="badge badge-${p.status}"><span class="badge-dot"></span>${statusLabels[p.status]||p.status}</span></td>
+      <td style="color:var(--text-muted);font-size:13px">${new Date(p.created_at).toLocaleString('es-AR')}</td>
+      <td>${p.status === 'approved' ? `<button class="btn-refund" onclick="refundPayment(${p.id})">Reembolsar</button>` : '—'}</td>
+    </tr>`).join('');
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPayments();
+}
+
+async function sendPayment() {
+  const payer = parseInt(document.getElementById('pay-payer').value);
+  const receiver = parseInt(document.getElementById('pay-receiver').value);
+  const amount = parseFloat(document.getElementById('pay-amount').value);
+  const resultEl = document.getElementById('payment-result');
+  const btn = document.getElementById('btn-send-payment');
+  if (!payer || !receiver || !amount || amount <= 0) {
+    resultEl.style.display = 'block';
+    resultEl.className = 'payment-result error';
+    resultEl.textContent = 'Completá todos los campos correctamente.';
+    return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Procesando...';
+  try {
+    const res = await fetch(`${API}/payments/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ payer_id: payer, receiver_id: receiver, amount })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error desconocido');
+    resultEl.style.display = 'block';
+    resultEl.className = 'payment-result success';
+    resultEl.innerHTML = `✓ Pago #${data.id} creado — estado: <strong>${data.status}</strong>. Se procesará automáticamente.`;
+    document.getElementById('pay-payer').value = '';
+    document.getElementById('pay-receiver').value = '';
+    document.getElementById('pay-amount').value = '';
+    showToast(`Pago #${data.id} creado exitosamente`, 'green');
+  } catch (e) {
+    resultEl.style.display = 'block';
+    resultEl.className = 'payment-result error';
+    resultEl.textContent = `Error: ${e.message}`;
+    showToast(`Error: ${e.message}`, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Enviar pago';
+  }
+}
+
+async function refundPayment(paymentId) {
+  try {
+    const res = await fetch(`${API}/payments/${paymentId}/refund`, { method: 'POST', headers: getHeaders() });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail); }
+    showToast(`Pago #${paymentId} reembolsado`, 'green');
+    loadPayments();
+  } catch (e) {
+    showToast(`Error: ${e.message}`, 'red');
+  }
+}
+
+function startPolling() {
+  clearInterval(pollingInterval);
+  pollingInterval = setInterval(() => {
+    const historyActive = document.getElementById('page-history').classList.contains('active');
+    if (historyActive) loadPayments();
+    loadDashboard();
+  }, 3000);
+}
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => { t.classList.remove('show'); }, 3500);
+}
+
+window.onload = () => {
+  const savedKey = localStorage.getItem('apiKey');
+  const savedId = localStorage.getItem('merchantId');
+  if (savedKey && savedId) {
+    document.getElementById('api-key-input').value = savedKey;
+    document.getElementById('merchant-id-input').value = savedId;
+  }
+};
+</script>
+</body>
+</html>
