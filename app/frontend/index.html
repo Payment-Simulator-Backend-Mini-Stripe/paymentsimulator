@@ -9,9 +9,9 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f0f2f5;
-    --sidebar: #00a650;
-    --sidebar-dark: #007a3c;
+ --bg: #f0f2f5;
+    --sidebar: #009ee3;
+    --sidebar-dark: #0077b6;
     --sidebar-text: rgba(255,255,255,0.75);
     --sidebar-active: rgba(255,255,255,0.15);
     --white: #ffffff;
@@ -23,8 +23,8 @@
     --gray-800: #343a40;
     --blue: #009ee3;
     --blue-light: #e6f6fd;
-    --green: #00a650;
-    --green-light: #e6f7ee;
+    --green: #009ee3;
+    --green-light: #e6f6fd;
     --red: #f23d4f;
     --red-light: #fef0f1;
     --yellow: #f5a623;
@@ -48,7 +48,7 @@
   /* ── LOGIN ── */
   #login-screen {
     position: fixed; inset: 0;
-    background: linear-gradient(135deg, #00a650 0%, #007a3c 50%, #005a2d 100%);
+    background: linear-gradient(135deg, #33b5e8 0%, #009ee3 50%, #0077b6 100%);
     display: flex; align-items: center; justify-content: center;
     z-index: 1000;
     transition: opacity 0.4s ease;
@@ -369,7 +369,7 @@
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <img src="mercadojunior.png" alt="MercadoJunior" style="height: 100px;" /> 
+      <img src="mercadojunior.png" alt="MercadoJunior" style="height: 110px;" /> 
     </div>
     <h2>Bienvenido</h2>
     <p>Ingresá tu API Key para acceder al simulador de pagos</p>
@@ -392,7 +392,7 @@
   <aside class="sidebar">
     <div class="sidebar-header">
     <div class="sidebar-logo">
-  <img src="mercadojunior.png" alt="MercadoJunior" style="height: 90px; width: 90px; border-radius: 50%; object-fit: cover;" />
+  <img src="mercadojunior.png" alt="MercadoJunior" style="height: 110px; width: 110px; border-radius: 50%; object-fit: cover;" />
 </div>
     </div>
     <div class="sidebar-merchant">
@@ -504,7 +504,7 @@
       </div>
     </div>
 
-    <!-- HISTORY -->
+<!-- HISTORY -->
     <div class="page" id="page-history">
       <div class="page-header">
         <h1>Historial de pagos</h1>
@@ -542,6 +542,11 @@
             </tbody>
           </table>
         </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+          <button class="filter-btn" onclick="changePage(-1)">← Anterior</button>
+          <span id="page-indicator" style="font-size:13px; color:var(--text-muted);">Página 1</span>
+          <button class="filter-btn" onclick="changePage(1)">Siguiente →</button>
+        </div>
       </div>
     </div>
 
@@ -558,6 +563,9 @@ let merchantId = null;
 let pollingInterval = null;
 let currentFilter = 'all';
 let allPayments = [];
+let currentPage = 0;
+const PAGE_SIZE = 10;
+
 
 function getHeaders() {
   return { 'Content-Type': 'application/json', 'X-API-Key': apiKey };
@@ -574,6 +582,7 @@ async function handleLogin() {
     if (!res.ok) throw new Error();
     const merchant = await res.json();
     if (merchant.id !== mid) throw new Error();
+    apiKey = key;
     merchantId = mid;
     localStorage.setItem('apiKey', key);
     localStorage.setItem('merchantId', mid);
@@ -633,7 +642,7 @@ async function loadDashboard() {
   } catch { showToast('Error cargando merchants', 'red'); }
 
   try {
-    const res2 = await fetch(`${API}/payments/?merchant_id=${merchantId}`, { headers: getHeaders() });
+    const res2 = await fetch(`${API}/payments/?merchant_id=${merchantId}&skip=0&limit=10`, { headers: getHeaders() });
     if (res2.ok) {
       const payments = await res2.json();
       document.getElementById('stat-approved').textContent = payments.filter(p=>p.status==='approved').length;
@@ -644,7 +653,7 @@ async function loadDashboard() {
 
 async function loadPayments() {
   try {
-    const res = await fetch(`${API}/payments/?merchant_id=${merchantId}`, { headers: getHeaders() });
+    const res = await fetch(`${API}/payments/?merchant_id=${merchantId}&skip=${currentPage * PAGE_SIZE}&limit=${PAGE_SIZE}`, { headers: getHeaders() });
     if (!res.ok) return;
     allPayments = await res.json();
     renderPayments();
@@ -728,6 +737,14 @@ async function refundPayment(paymentId) {
     showToast(`Error: ${e.message}`, 'red');
   }
 }
+
+function changePage(direction) {
+  if (currentPage + direction < 0) return;
+  currentPage += direction;
+  document.getElementById('page-indicator').textContent = `Página ${currentPage + 1}`;
+  loadPayments();
+}
+
 
 function startPolling() {
   clearInterval(pollingInterval);
