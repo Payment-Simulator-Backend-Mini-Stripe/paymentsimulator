@@ -19,8 +19,8 @@ class PaymentRepository:
         result = await self.session.execute(select(Payment).where(Payment.id == payment_id))
         return result.scalars().first()
     
-    async def get_all_payments(self, merchant_id: int):
-        result = await self.session.execute(select(Payment).where(or_(Payment.payer_id == merchant_id, Payment.receiver_id == merchant_id)))
+    async def get_all_payments(self, merchant_id: int, skip: int = 0, limit: int = 10):
+        result = await self.session.execute(select(Payment).where(or_(Payment.payer_id == merchant_id, Payment.receiver_id == merchant_id)).offset(skip).limit(limit))
         return result.scalars().all()
     
     async def update_payment_status(self, payment_id: int, new_status: PaymentStatus):
