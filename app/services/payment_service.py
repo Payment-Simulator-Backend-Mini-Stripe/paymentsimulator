@@ -17,8 +17,6 @@ class PaymentService:
         self.merchant_repo = merchant_repo
         self.webhook_service = webhook_service
 
-    
-
     async def create_payment(self, payment_data, payer_id: int, receiver_id: int):
         if not await self.merchant_repo.is_merchant_active(payer_id):
             raise HTTPException(status_code=403, detail="Merchant is not active")
@@ -45,19 +43,22 @@ class PaymentService:
         
     async def refund_payment(self, payment_id: int):
         payment = await self.get_payment_by_id(payment_id)
+        
         if payment is None:
             raise HTTPException(status_code=404, detail="Payment not found")
         if payment.status != PaymentStatus.APPROVED:
             raise HTTPException(status_code=400, detail="Only approved payments can be refunded")
         try:
+            payer = await self.merchant_repo.get_merchant_by_id(payment.payer_id)
+            receiver = await self.merchant_repo.get_merchant_by_id(payment.receiver_id)
             updated_payment = await self.payment_repo.update_payment_status(payment_id, PaymentStatus.REFUNDED)
             await self.webhook_service.send_webhook(updated_payment)
+            await self.merchant_repo.update_wallet(payment.payer_id, payer.wallet + payment.amount)
+            await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet - payment.amount)
             return updated_payment
         except Exception as e:
             raise HTTPException(status_code=500, detail="Failed to refund payment")
-        
-
-        
+          
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
 
@@ -75,7 +76,6 @@ class PaymentService:
             return updated_payment
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
-                
 
     async def expire_pending_payments(self):
         pending_payments = await self.payment_repo.get_pending_payments()
@@ -91,7 +91,6 @@ class PaymentService:
 
             except Exception as e:
                 logger.error(f"Failed to expire payment {payment.id}: {e}")
-            
 
     async def process_payment(self, payment_id: int):
         payment = await self.get_payment_by_id(payment_id)
@@ -112,6 +111,3 @@ class PaymentService:
         await self.merchant_repo.update_wallet(payment.receiver_id, receiver.wallet + payment.amount)
         await self.payment_repo.update_payment_status(payment_id, PaymentStatus.APPROVED)
         await self.webhook_service.send_webhook(payment)
-        
-
-    
