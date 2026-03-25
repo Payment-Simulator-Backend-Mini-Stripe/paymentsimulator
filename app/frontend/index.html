@@ -135,7 +135,7 @@ body {
   padding: 1.5rem 1.25rem 1rem;
   display: flex; justify-content: center;
 }
-.sidebar-header img { height: 60px; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.95; }
+.sidebar-header img { height: 64px; object-fit: contain; }
 
 .sidebar-profile {
   margin: 0 1rem 0.5rem;
@@ -559,6 +559,89 @@ tbody td { padding: 13px 14px; color: var(--text); }
   border-top: 1px solid var(--gray-100);
 }
 .page-info { font-size: 13px; color: var(--text-muted); }
+
+/* ── RECEIVER INPUT ROW ── */
+.receiver-input-row { display: flex; gap: 0.5rem; align-items: stretch; }
+.receiver-input-row input {
+  flex: 1; padding: 12px 14px;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px;
+  color: var(--text); background: var(--white);
+  transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+}
+.receiver-input-row input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,158,227,0.1); }
+.receiver-found {
+  margin-top: 8px; padding: 10px 13px;
+  background: var(--green-light); border: 1px solid rgba(0,194,122,0.2);
+  border-radius: var(--radius-sm); font-size: 13px; color: #00875a;
+  display: none; align-items: center; gap: 8px;
+}
+.receiver-found.visible { display: flex; }
+.receiver-not-found {
+  margin-top: 8px; padding: 10px 13px;
+  background: var(--red-light); border: 1px solid rgba(242,61,79,0.2);
+  border-radius: var(--radius-sm); font-size: 13px; color: #c0132a;
+  display: none;
+}
+.receiver-not-found.visible { display: block; }
+
+.btn-qr-scan {
+  padding: 0 14px;
+  background: var(--blue-light); color: var(--blue);
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.btn-qr-scan:hover { background: var(--blue); color: white; }
+.btn-qr-scan svg { width: 20px; height: 20px; }
+
+/* ── QR SCANNER MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000; opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.modal-overlay.visible { opacity: 1; pointer-events: all; }
+.modal-card {
+  background: var(--white); border-radius: 20px;
+  padding: 2rem; width: 100%; max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(16px); transition: transform 0.3s;
+}
+.modal-overlay.visible .modal-card { transform: translateY(0); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.modal-header h3 { font-size: 17px; font-weight: 700; }
+.modal-close {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--gray-100); border: none;
+  cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.modal-close:hover { background: var(--gray-200); }
+#scanner-video {
+  width: 100%; border-radius: 12px;
+  background: #000; display: block;
+  max-height: 300px; object-fit: cover;
+}
+.scanner-hint { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0.75rem; }
+
+/* ── QR DOWNLOAD BUTTON ── */
+.btn-download-qr {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 11px 20px; margin-top: 1rem;
+  background: var(--blue-light); color: var(--blue);
+  border: 1.5px solid var(--blue); border-radius: var(--radius-sm);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s; width: 100%;
+}
+.btn-download-qr:hover { background: var(--blue); color: white; }
+.btn-download-qr svg { width: 16px; height: 16px; }
 </style>
 </head>
 <body>
@@ -686,17 +769,23 @@ tbody td { padding: 13px 14px; color: var(--text); }
     <div class="page" id="page-send">
       <div class="page-header">
         <h1>Enviar dinero</h1>
-        <p>Transferí fondos a otro merchant del sistema</p>
+        <p>Transferí fondos usando email, alias o escaneando un QR</p>
       </div>
       <div class="card form-card">
         <div class="form-group-app">
           <label>Destinatario</label>
-          <div class="merchant-select-group">
-            <select id="pay-receiver">
-              <option value="">Seleccioná un merchant...</option>
-            </select>
+          <div class="receiver-input-row">
+            <input type="text" id="pay-receiver-input" placeholder="Email o alias del destinatario" oninput="searchReceiver()" autocomplete="off" />
+            <button class="btn-qr-scan" onclick="openScanner()" title="Escanear QR">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h2v2h-2zm4 0h2v2h-2zm-4 4h2v2h-2zm4-2v2h2"/></svg>
+            </button>
           </div>
-          <div class="input-hint">Seleccioná a quién querés enviarle dinero</div>
+          <div class="receiver-found" id="receiver-found">
+            <span>✓</span><span id="receiver-found-name">—</span>
+          </div>
+          <div class="receiver-not-found" id="receiver-not-found">No se encontró ningún merchant con ese email o alias</div>
+          <input type="hidden" id="pay-receiver-id" />
+          <div class="input-hint" style="margin-top:6px">Podés usar el email, el alias (@nombre) o escanear el QR del destinatario</div>
         </div>
         <div class="form-group-app">
           <label>Monto</label>
@@ -734,6 +823,10 @@ tbody td { padding: 13px 14px; color: var(--text); }
           <div class="qr-wrapper">
             <div id="request-qr-code"></div>
             <div class="qr-label" id="request-qr-label">@—</div>
+            <button class="btn-download-qr" onclick="downloadQR('request-qr-code', 'qr-cobro-mercadojunior')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar QR
+            </button>
           </div>
         </div>
       </div>
@@ -823,6 +916,10 @@ tbody td { padding: 13px 14px; color: var(--text); }
           <div class="qr-wrapper">
             <div id="qr-code"></div>
             <div class="qr-label" id="qr-label">@—</div>
+            <button class="btn-download-qr" onclick="downloadQR('qr-code', 'mi-qr-mercadojunior')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Descargar QR
+            </button>
           </div>
         </div>
 
@@ -840,6 +937,18 @@ tbody td { padding: 13px 14px; color: var(--text); }
   </main>
 </div>
 
+<!-- QR SCANNER MODAL -->
+<div class="modal-overlay" id="scanner-modal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>Escanear QR</h3>
+      <button class="modal-close" onclick="closeScanner()">✕</button>
+    </div>
+    <video id="scanner-video" autoplay playsinline></video>
+    <p class="scanner-hint">Apuntá la cámara al QR del destinatario</p>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -853,21 +962,19 @@ let allPayments = [];
 let allMerchants = [];
 let currentPage = 0;
 const PAGE_SIZE = 10;
-let requestQRInstance = null;
-let profileQRInstance = null;
+let scannerStream = null;
+let scannerInterval = null;
+let resolvedReceiverId = null;
 
 function getHeaders() {
   return { 'Content-Type': 'application/json', 'X-API-Key': apiKey };
 }
-
 function getAlias(merchant) {
   return merchant.alias || `merchant.${merchant.id}`;
 }
-
 function getInitial(name) {
   return name ? name.charAt(0).toUpperCase() : '?';
 }
-
 function fmt(amount) {
   return `$${Number(amount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}`;
 }
@@ -897,7 +1004,7 @@ function initApp(merchant) {
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.add('visible');
   loadHome();
-  loadMerchantsForSelect();
+  loadMerchantsCache();
   startPolling();
 }
 
@@ -929,7 +1036,7 @@ function navigate(page, el) {
   document.getElementById(`page-${page}`).classList.add('active');
   if (el) el.classList.add('active');
   if (page === 'home') loadHome();
-  if (page === 'history') loadPayments();
+  if (page === 'history') { currentPage = 0; loadPayments(); }
   if (page === 'profile') loadProfile();
   if (page === 'request') loadRequestQR();
 }
@@ -941,7 +1048,6 @@ async function loadHome() {
     currentMerchant = await res.json();
     updateSidebarProfile(currentMerchant);
   } catch {}
-
   try {
     const res2 = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}`, { headers: getHeaders() });
     if (!res2.ok) return;
@@ -978,27 +1084,71 @@ function renderActivity(payments) {
   }).join('');
 }
 
-async function loadMerchantsForSelect() {
+async function loadMerchantsCache() {
   try {
     const res = await fetch(`${API}/merchants/`, { headers: getHeaders() });
     allMerchants = await res.json();
-    const select = document.getElementById('pay-receiver');
-    select.innerHTML = '<option value="">Seleccioná un merchant...</option>';
-    allMerchants.filter(m => m.id !== merchantId).forEach(m => {
-      select.innerHTML += `<option value="${m.id}">${m.name_store} (#${m.id}) — ${fmt(m.wallet || 0)}</option>`;
-    });
+  } catch {}
+}
+
+// ── RECEIVER SEARCH BY EMAIL OR ALIAS ──
+let searchTimeout = null;
+function searchReceiver() {
+  clearTimeout(searchTimeout);
+  const val = document.getElementById('pay-receiver-input').value.trim();
+  document.getElementById('receiver-found').classList.remove('visible');
+  document.getElementById('receiver-not-found').classList.remove('visible');
+  document.getElementById('pay-receiver-id').value = '';
+  resolvedReceiverId = null;
+  if (!val || val.length < 2) return;
+  searchTimeout = setTimeout(() => resolveReceiver(val), 400);
+}
+
+function resolveReceiver(query) {
+  const q = query.toLowerCase().replace(/^@/, '');
+  const match = allMerchants.find(m =>
+    m.id !== merchantId && (
+      m.email?.toLowerCase() === q ||
+      getAlias(m).toLowerCase() === q ||
+      m.name_store?.toLowerCase() === q
+    )
+  );
+  if (match) {
+    resolvedReceiverId = match.id;
+    document.getElementById('pay-receiver-id').value = match.id;
+    document.getElementById('receiver-found-name').textContent = `${match.name_store} — ${fmt(match.wallet || 0)}`;
+    document.getElementById('receiver-found').classList.add('visible');
+  } else {
+    document.getElementById('receiver-not-found').classList.add('visible');
+  }
+}
+
+function setReceiverFromQR(data) {
+  try {
+    const parsed = JSON.parse(data);
+    const match = allMerchants.find(m => m.id === parsed.merchant_id && m.id !== merchantId);
+    if (match) {
+      document.getElementById('pay-receiver-input').value = '@' + getAlias(match);
+      resolvedReceiverId = match.id;
+      document.getElementById('pay-receiver-id').value = match.id;
+      document.getElementById('receiver-found-name').textContent = `${match.name_store} — ${fmt(match.wallet || 0)}`;
+      document.getElementById('receiver-found').classList.add('visible');
+      document.getElementById('receiver-not-found').classList.remove('visible');
+      if (parsed.amount) document.getElementById('pay-amount').value = parsed.amount;
+      showToast(`Destinatario: ${match.name_store}`, 'green');
+    }
   } catch {}
 }
 
 async function sendPayment() {
-  const receiver = parseInt(document.getElementById('pay-receiver').value);
+  const receiver = resolvedReceiverId || parseInt(document.getElementById('pay-receiver-id').value);
   const amount = parseFloat(document.getElementById('pay-amount').value);
   const resultEl = document.getElementById('payment-result');
   const btn = document.getElementById('btn-send-payment');
   if (!receiver || !amount || amount <= 0) {
     resultEl.style.display = 'block';
     resultEl.className = 'payment-result error';
-    resultEl.textContent = 'Completá todos los campos correctamente.';
+    resultEl.textContent = !receiver ? 'Buscá y seleccioná un destinatario válido.' : 'Ingresá un monto válido.';
     return;
   }
   if (currentMerchant && amount > (currentMerchant.wallet || 0)) {
@@ -1018,9 +1168,12 @@ async function sendPayment() {
     if (!res.ok) throw new Error(data.detail || 'Error desconocido');
     resultEl.style.display = 'block';
     resultEl.className = 'payment-result success';
-    resultEl.innerHTML = `✓ Pago #${data.id} creado exitosamente. Se procesará de forma automática.`;
-    document.getElementById('pay-receiver').value = '';
+    resultEl.innerHTML = `✓ Pago #${data.id} creado exitosamente. Se procesará automáticamente.`;
+    document.getElementById('pay-receiver-input').value = '';
+    document.getElementById('pay-receiver-id').value = '';
     document.getElementById('pay-amount').value = '';
+    document.getElementById('receiver-found').classList.remove('visible');
+    resolvedReceiverId = null;
     showToast(`Pago #${data.id} enviado`, 'green');
     loadHome();
   } catch (e) {
@@ -1034,11 +1187,15 @@ async function sendPayment() {
   }
 }
 
+// ── HISTORY (fixed polling) ──
 async function loadPayments() {
   try {
-    const res = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}&skip=${currentPage * PAGE_SIZE}&limit=${PAGE_SIZE}`, { headers: getHeaders() });
+    const res = await fetch(`${API}/payments/?payer_id=${merchantId}&receiver_id=${merchantId}&skip=${currentPage * PAGE_SIZE}&limit=${PAGE_SIZE + 100}`, { headers: getHeaders() });
     if (!res.ok) return;
-    allPayments = await res.json();
+    const data = await res.json();
+    // deduplicate by id since payer_id == receiver_id can return duplicates
+    const seen = new Set();
+    allPayments = data.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
     renderPayments();
   } catch {}
 }
@@ -1052,7 +1209,7 @@ function renderPayments() {
   }
   const statusLabels = { pending: 'Pendiente', approved: 'Aprobado', failed: 'Fallido', refunded: 'Reembolsado' };
   tbody.innerHTML = filtered.map(p => {
-    const isSent = p.payer_id === merchantId;
+    const isSent = p.payer_id === merchantId && p.receiver_id !== merchantId;
     const counterpart = isSent ? `#${p.receiver_id}` : `#${p.payer_id}`;
     return `
       <tr>
@@ -1093,6 +1250,7 @@ async function refundPayment(paymentId) {
   }
 }
 
+// ── PROFILE ──
 async function loadProfile() {
   try {
     const res = await fetch(`${API}/merchants/${merchantId}`, { headers: getHeaders() });
@@ -1100,8 +1258,7 @@ async function loadProfile() {
     const m = await res.json();
     currentMerchant = m;
     const alias = getAlias(m);
-    const initial = getInitial(m.name_store);
-    document.getElementById('profile-avatar-large').textContent = initial;
+    document.getElementById('profile-avatar-large').textContent = getInitial(m.name_store);
     document.getElementById('profile-name').textContent = m.name_store;
     document.getElementById('profile-alias-display').textContent = '@' + alias;
     document.getElementById('profile-balance').textContent = fmt(m.wallet || 0);
@@ -1116,7 +1273,7 @@ async function loadProfile() {
 
 function generateProfileQR(merchant) {
   const alias = getAlias(merchant);
-  const qrData = JSON.stringify({ merchant_id: merchant.id, alias: alias, name: merchant.name_store });
+  const qrData = JSON.stringify({ merchant_id: merchant.id, alias, name: merchant.name_store, email: merchant.email });
   const container = document.getElementById('qr-code');
   container.innerHTML = '';
   document.getElementById('qr-label').textContent = '@' + alias;
@@ -1133,12 +1290,68 @@ function updateRequestQR() {
   if (!currentMerchant) return;
   const amount = parseFloat(document.getElementById('req-amount').value) || null;
   const alias = getAlias(currentMerchant);
-  const qrData = JSON.stringify({ merchant_id: merchantId, alias: alias, amount: amount });
+  const qrData = JSON.stringify({ merchant_id: merchantId, alias, amount, email: currentMerchant.email });
   const container = document.getElementById('request-qr-code');
   container.innerHTML = '';
   new QRCode(container, { text: qrData, width: 200, height: 200, colorDark: '#009ee3', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.H });
 }
 
+// ── DOWNLOAD QR ──
+function downloadQR(containerId, filename) {
+  const container = document.getElementById(containerId);
+  const canvas = container.querySelector('canvas');
+  const img = container.querySelector('img');
+  if (canvas) {
+    const link = document.createElement('a');
+    link.download = filename + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } else if (img) {
+    const link = document.createElement('a');
+    link.download = filename + '.png';
+    link.href = img.src;
+    link.click();
+  }
+  showToast('QR descargado', 'green');
+}
+
+// ── QR SCANNER ──
+async function openScanner() {
+  document.getElementById('scanner-modal').classList.add('visible');
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = document.getElementById('scanner-video');
+    video.srcObject = scannerStream;
+    // Use BarcodeDetector if available, else fallback hint
+    if ('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      scannerInterval = setInterval(async () => {
+        try {
+          const barcodes = await detector.detect(video);
+          if (barcodes.length > 0) {
+            closeScanner();
+            navigate('send', document.querySelector('[data-page=send]'));
+            setReceiverFromQR(barcodes[0].rawValue);
+          }
+        } catch {}
+      }, 500);
+    } else {
+      document.querySelector('.scanner-hint').textContent = 'Escaneá el QR con la cámara — copiá los datos del QR manualmente si no detecta automáticamente';
+    }
+  } catch {
+    showToast('No se pudo acceder a la cámara', 'red');
+    closeScanner();
+  }
+}
+
+function closeScanner() {
+  clearInterval(scannerInterval);
+  if (scannerStream) { scannerStream.getTracks().forEach(t => t.stop()); scannerStream = null; }
+  document.getElementById('scanner-modal').classList.remove('visible');
+  document.getElementById('scanner-video').srcObject = null;
+}
+
+// ── ALIAS ──
 async function saveAlias() {
   const newAlias = document.getElementById('alias-input').value.trim().toLowerCase().replace(/\s+/g, '.');
   if (!newAlias) { showToast('Ingresá un alias válido', 'red'); return; }
@@ -1159,6 +1372,7 @@ async function saveAlias() {
   }
 }
 
+// ── POLLING ──
 function startPolling() {
   clearInterval(pollingInterval);
   pollingInterval = setInterval(() => {

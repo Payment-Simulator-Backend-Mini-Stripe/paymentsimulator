@@ -16,8 +16,8 @@ async def get_payment_service(db=Depends(get_db)):
 
 
 @router.get("/")
-async def get_all_payments(merchant_id: int, skip: int = 0, limit: int = 10, service=Depends(get_payment_service)):
-    return await service.get_all_payments(merchant_id, skip, limit)
+async def get_all_payments(payer_id: int, receiver_id: int, skip: int = 0, limit: int = 10, service=Depends(get_payment_service)):
+    return await service.get_all_payments(payer_id, receiver_id, skip, limit)
 
 @router.get("/{payment_id}")
 async def get_payment(payment_id: int, service=Depends(get_payment_service)):

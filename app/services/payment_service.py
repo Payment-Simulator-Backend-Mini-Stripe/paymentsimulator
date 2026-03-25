@@ -62,9 +62,9 @@ class PaymentService:
     async def get_payment_by_id(self, payment_id):
         return await self.payment_repo.get_payment_by_id(payment_id)
 
-    async def get_all_payments(self, merchant_id: int, skip: int = 0, limit: int = 10):
-        return await self.payment_repo.get_all_payments(merchant_id, skip, limit)
-
+    async def get_all_payments(self, payer_id: int, receiver_id: int, skip: int = 0, limit: int = 10):
+        return await self.payment_repo.get_all_payments(payer_id, receiver_id)
+    
     async def update_payment(self, payment_id: int, new_status: PaymentStatus):
         payment = await self.get_payment_by_id(payment_id)
         if payment is None:

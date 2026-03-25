@@ -11,3 +11,4 @@ class Merchant(Base):
     secret_key = Column(String)
     status = Column(String)
     wallet = Column(Float)
+    alias = Column(String)
