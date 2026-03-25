@@ -4,6 +4,7 @@ from app.repositories.webhook_repo import WebhookRepository
 from app.schemas.merchant import MerchantCreate
 from app.schemas.webhook import WebhookConfigCreate
 from app.services.merchant_service import MerchantService
+from app.schemas.merchant import MerchantUpdate
 from app.db.session import get_db
 from app.services.webhook_service import WebhookService
 from app.core.authentication import get_current_merchant
@@ -30,7 +31,7 @@ async def create_merchant(merchant_data: MerchantCreate, service=Depends(get_mer
     return await service.create_merchant(merchant_data)
 
 @router.put("/{merchant_id}")
-async def update_merchant(merchant_id: int, merchant_data: MerchantCreate, service=Depends(get_merchant_service)):
+async def update_merchant(merchant_id: int, merchant_data: MerchantUpdate, service=Depends(get_merchant_service)):
     return await service.update_merchant(merchant_id, merchant_data)    
 
 @router.post("/get_merchant_by_email")

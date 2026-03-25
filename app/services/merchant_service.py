@@ -17,7 +17,8 @@ class MerchantService:
             status=merchant_data.status,
             secret_key=secrets.token_hex(32),
             wallet = merchant_data.wallet,
-            registered_at = datetime.utcnow()
+            registered_at = datetime.utcnow(),
+            alias = merchant_data.alias
         )
         return await self.merchant_repo.create_merchant(new_merchant)
 
@@ -32,15 +33,19 @@ class MerchantService:
     
     async def update_merchant(self, merchant_id: int, merchant_data: MerchantUpdate):
         merchant = await self.get_merchant_by_id(merchant_id)
-
         if merchant is None:
             return None
 
-        merchant.name_store = merchant_data.name_store
-        merchant.address = merchant_data.address
-        merchant.email = merchant_data.email
-        merchant.status = merchant_data.status
-
+        if merchant_data.name_store is not None:
+            merchant.name_store = merchant_data.name_store
+        if merchant_data.address is not None:
+            merchant.address = merchant_data.address
+        if merchant_data.email is not None:
+            merchant.email = merchant_data.email
+        if merchant_data.status is not None:
+            merchant.status = merchant_data.status
+        if merchant_data.alias is not None:
+            merchant.alias = merchant_data.alias
 
         await self.merchant_repo.session.commit()
         await self.merchant_repo.session.refresh(merchant)

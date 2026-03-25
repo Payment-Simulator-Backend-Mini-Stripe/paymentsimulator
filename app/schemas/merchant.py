@@ -24,6 +24,7 @@ class MerchantResponse(BaseModel):
     registered_at: datetime
     model_config = {"from_attributes": True}
     wallet: float
+    alias: Optional[str] = None
 
 
 class MerchantCreatedResponse(BaseModel):
@@ -41,5 +42,6 @@ class MerchantUpdate(BaseModel):
     email: Optional[EmailStr] = None
     status: Optional[str] = None
     wallet: Optional[float] = None
+    alias: Optional[str] = None
 
             
